@@ -66,7 +66,7 @@ function employeeCard(employee,retired=false){
       <h3>${escapeHtml(employee.name||"氏名未入力")}</h3>
       <p>${escapeHtml(employee.location||"所属未設定")} ／ ${escapeHtml(employee.position||"役職未設定")}<br>
       ${retired?`退職日 ${escapeHtml(employee.retirementDate||"未設定")}`:`入社日 ${escapeHtml(employee.hireDate||"未設定")}`}</p>
-      <span class="badge">${escapeHtml(employee.employmentType||"未設定")}</span>
+      <span class="badge${employee.employmentType==="パート"?" part":""}">${escapeHtml(employee.employmentType||"未設定")}</span>
     </div>
     <div class="card-actions">
       <button class="mini-button" onclick="openForm('${employee.id}')">詳細・編集</button>
