@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おりーぶ庵">
   <title>おりーぶ庵 従業員管理</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=2">
+  <link rel="stylesheet" href="assets/css/style.css?v=3">
 </head>
 <body>
   <div class="app">
@@ -151,17 +151,20 @@
               </select>
             </label>
             <label>役職<input id="position"></label>
+            <label class="full">雇用形態
+              <div class="segbtns" id="empTypeButtons">
+                <button type="button" class="segbtn" data-val="正社員">正社員</button>
+                <button type="button" class="segbtn" data-val="パート">パート</button>
+                <button type="button" class="segbtn" data-val="アルバイト">アルバイト</button>
+                <button type="button" class="segbtn" data-val="登録ヘルパー">登録ヘルパー</button>
+              </div>
+              <input type="hidden" id="employmentType">
+            </label>
           </div>
         </section>
 
         <section class="tab-panel" data-panel="contract">
           <div class="form-grid">
-            <label>雇用形態
-              <select id="employmentType">
-                <option>正社員</option><option>パート</option>
-                <option>アルバイト</option><option>登録ヘルパー</option>
-              </select>
-            </label>
             <label>入社日<input id="hireDate" type="date"></label>
             <label>契約終了日<input id="contractEnd" type="date"></label>
             <label>賃金区分
@@ -207,6 +210,6 @@
     </div>
   </div>
 
-  <script src="assets/js/app.js?v=3"></script>
+  <script src="assets/js/app.js?v=4"></script>
 </body>
 </html>

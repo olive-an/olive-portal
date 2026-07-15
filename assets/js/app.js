@@ -22,6 +22,9 @@ document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>
   document.querySelectorAll(".tab-panel").forEach(p=>p.classList.toggle("active",p.dataset.panel===tab.dataset.tab));
 }));
 
+function syncEmpButtons(){const v=$("employmentType").value;document.querySelectorAll("#empTypeButtons .segbtn").forEach(b=>b.classList.toggle("active",b.dataset.val===v));}
+document.querySelectorAll("#empTypeButtons .segbtn").forEach(b=>b.addEventListener("click",()=>{$("employmentType").value=b.dataset.val;syncEmpButtons();}));
+
 function openForm(id=""){
   $("employeeForm").reset(); $("employeeId").value=""; currentPhoto="";
   $("photoPreview").innerHTML="👤"; $("modalTitle").textContent=id?"職員情報編集":"職員登録";
@@ -33,6 +36,7 @@ function openForm(id=""){
     if(currentPhoto)$("photoPreview").innerHTML=`<img src="${currentPhoto}" alt="顔写真">`;
   }
   document.querySelector(".tab[data-tab='basic']").click();
+  syncEmpButtons();
   $("employeeModal").classList.add("open"); $("employeeModal").setAttribute("aria-hidden","false");
 }
 function closeForm(){$("employeeModal").classList.remove("open");$("employeeModal").setAttribute("aria-hidden","true")}
