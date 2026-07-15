@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="おりーぶ庵">
+  <title>おりーぶ庵 人事・労務DX</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">おりーぶ庵株式会社</p>
+        <h1>人事・労務DX</h1>
+      </div>
+      <button class="round-button" id="addEmployeeTop" aria-label="職員を追加">＋</button>
+    </header>
+
+    <main>
+      <section id="homeView" class="view active">
+        <div class="summary-card">
+          <div>
+            <p class="muted">現在の在籍職員</p>
+            <strong id="activeCount">0名</strong>
+          </div>
+          <div class="summary-icon">👥</div>
+        </div>
+
+        <h2 class="section-title">メニュー</h2>
+        <div class="icon-grid">
+          <button class="menu-card" data-target="employeesView">
+            <span class="menu-icon blue">👥</span><span>従業員一覧</span>
+          </button>
+          <button class="menu-card" id="addEmployeeMenu">
+            <span class="menu-icon green">＋</span><span>新規登録</span>
+          </button>
+          <button class="menu-card" data-target="employeesView">
+            <span class="menu-icon orange">📄</span><span>契約管理</span>
+          </button>
+          <button class="menu-card" data-target="employeesView">
+            <span class="menu-icon purple">🎓</span><span>資格管理</span>
+          </button>
+          <button class="menu-card" data-target="dashboardView">
+            <span class="menu-icon pink">🩺</span><span>健康診断</span>
+          </button>
+          <button class="menu-card" data-target="dashboardView">
+            <span class="menu-icon green">📅</span><span>有給管理</span>
+          </button>
+          <button class="menu-card" data-target="retiredView">
+            <span class="menu-icon gray">📦</span><span>退職者管理</span>
+          </button>
+          <button class="menu-card" data-target="dashboardView">
+            <span class="menu-icon blue">📊</span><span>ダッシュボード</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="employeesView" class="view">
+        <div class="page-heading">
+          <div><p class="eyebrow">PERSONNEL</p><h2>従業員一覧</h2></div>
+          <button class="primary-button" id="addEmployeeList">＋ 追加</button>
+        </div>
+        <div class="filter-row">
+          <input id="searchInput" type="search" placeholder="氏名・所属・資格で検索">
+          <select id="employmentFilter">
+            <option value="">全雇用形態</option>
+            <option>正社員</option>
+            <option>契約社員</option>
+            <option>パート</option>
+            <option>アルバイト</option>
+            <option>登録ヘルパー</option>
+          </select>
+        </div>
+        <div id="employeeList" class="card-list"></div>
+      </section>
+
+      <section id="dashboardView" class="view">
+        <div class="page-heading">
+          <div><p class="eyebrow">DASHBOARD</p><h2>管理状況</h2></div>
+        </div>
+        <div class="stats-grid">
+          <article class="stat-card"><span>在籍職員</span><strong id="dashActive">0</strong></article>
+          <article class="stat-card"><span>退職者</span><strong id="dashRetired">0</strong></article>
+          <article class="stat-card"><span>健診未登録</span><strong id="dashHealthMissing">0</strong></article>
+          <article class="stat-card"><span>扶養申告未提出</span><strong id="dashDependentMissing">0</strong></article>
+        </div>
+        <article class="alert-card">
+          <h3>確認事項</h3>
+          <ul id="alertList"></ul>
+        </article>
+      </section>
+
+      <section id="retiredView" class="view">
+        <div class="page-heading">
+          <div><p class="eyebrow">ARCHIVE</p><h2>退職者一覧</h2></div>
+        </div>
+        <div id="retiredList" class="card-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-button active" data-target="homeView">🏠<span>ホーム</span></button>
+    <button class="nav-button" data-target="employeesView">👥<span>職員</span></button>
+    <button class="nav-button" data-target="dashboardView">📊<span>集計</span></button>
+    <button class="nav-button" data-target="retiredView">📦<span>退職者</span></button>
+  </nav>
+
+  <div class="modal" id="employeeModal" aria-hidden="true">
+    <div class="modal-sheet">
+      <header class="modal-header">
+        <div><p class="eyebrow">EMPLOYEE</p><h2 id="modalTitle">職員登録</h2></div>
+        <button class="round-button" id="closeModal">×</button>
+      </header>
+
+      <div class="tab-row">
+        <button class="tab active" data-tab="basic">基本情報</button>
+        <button class="tab" data-tab="contract">契約</button>
+        <button class="tab" data-tab="labor">労務</button>
+        <button class="tab" data-tab="qualification">資格</button>
+      </div>
+
+      <form id="employeeForm">
+        <input type="hidden" id="employeeId">
+
+        <section class="tab-panel active" data-panel="basic">
+          <div class="photo-area">
+            <div id="photoPreview" class="photo-preview">👤</div>
+            <label class="secondary-button">写真を選ぶ<input id="photoInput" type="file" accept="image/*" hidden></label>
+          </div>
+          <div class="form-grid">
+            <label>社員番号<input id="employeeNo" placeholder="EMP0001"></label>
+            <label>氏名<input id="name" required></label>
+            <label>フリガナ<input id="kana"></label>
+            <label>生年月日<input id="birthDate" type="date"></label>
+            <label>郵便番号<input id="postalCode"></label>
+            <label class="full">住所<input id="address"></label>
+            <label>電話番号<input id="phone" type="tel"></label>
+            <label>メール<input id="email" type="email"></label>
+            <label>緊急連絡先氏名<input id="emergencyName"></label>
+            <label>緊急連絡先TEL<input id="emergencyPhone" type="tel"></label>
+            <label>所属
+              <select id="location">
+                <option value="">選択してください</option>
+                <option>本社</option><option>西九条ホーム</option><option>九条ホーム</option>
+                <option>酉島ホーム</option><option>新郡山ホーム</option><option>春日出ホーム</option>
+                <option>出来島ホーム</option><option>ヘルパーステーションぼのぼの</option>
+              </select>
+            </label>
+            <label>役職<input id="position"></label>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="contract">
+          <div class="form-grid">
+            <label>雇用形態
+              <select id="employmentType">
+                <option>正社員</option><option>契約社員</option><option>パート</option>
+                <option>アルバイト</option><option>登録ヘルパー</option>
+              </select>
+            </label>
+            <label>入社日<input id="hireDate" type="date"></label>
+            <label>契約終了日<input id="contractEnd" type="date"></label>
+            <label>賃金区分
+              <select id="wageType"><option>月給</option><option>日給</option><option>時給</option></select>
+            </label>
+            <label>基本賃金<input id="baseWage" type="number" min="0"></label>
+            <label>資格手当<input id="qualificationAllowance" type="number" min="0"></label>
+            <label>処遇改善手当<input id="improvementAllowance" type="number" min="0"></label>
+            <label>交通費<input id="transportAllowance" type="number" min="0"></label>
+            <label>夜勤単価<input id="nightWage" type="number" min="0"></label>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="labor">
+          <div class="form-grid">
+            <label>健康保険<select id="healthInsurance"><option>未加入</option><option>加入</option></select></label>
+            <label>厚生年金<select id="pension"><option>未加入</option><option>加入</option></select></label>
+            <label>雇用保険<select id="employmentInsurance"><option>未加入</option><option>加入</option></select></label>
+            <label>健康診断実施日<input id="healthCheckDate" type="date"></label>
+            <label>次回健診期限<input id="nextHealthCheck" type="date"></label>
+            <label>有給残日数<input id="paidLeaveRemaining" type="number" min="0" step="0.5"></label>
+            <label>扶養人数<input id="dependents" type="number" min="0"></label>
+            <label>扶養控除等申告書
+              <select id="dependentDeclaration"><option>未提出</option><option>提出済</option></select>
+            </label>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="qualification">
+          <div class="form-grid">
+            <label class="full">所有資格<textarea id="qualifications" rows="4" placeholder="介護福祉士、初任者研修など"></textarea></label>
+            <label>資格取得日<input id="qualificationDate" type="date"></label>
+            <label>資格更新期限<input id="qualificationExpiry" type="date"></label>
+            <label class="full">備考<textarea id="notes" rows="4"></textarea></label>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button type="button" class="secondary-button" id="cancelForm">キャンセル</button>
+          <button type="submit" class="primary-button">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
