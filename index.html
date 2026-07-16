@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おりーぶ庵">
   <title>おりーぶ庵 従業員管理</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=3">
+  <link rel="stylesheet" href="assets/css/style.css?v=4">
 </head>
 <body>
   <div class="app">
@@ -165,6 +165,14 @@
 
         <section class="tab-panel" data-panel="contract">
           <div class="form-grid">
+            <label class="full">労働契約書（PDF）
+              <div class="pdf-area">
+                <label class="secondary-button">PDFをアップロード<input id="contractPdfInput" type="file" accept="application/pdf" hidden></label>
+                <span id="contractPdfName" class="pdf-name">未登録</span>
+                <button type="button" class="mini-button danger" id="contractPdfRemove" style="display:none">削除</button>
+              </div>
+              <div id="contractPdfPreview" class="pdf-preview"></div>
+            </label>
             <label>入社日<input id="hireDate" type="date"></label>
             <label>契約終了日<input id="contractEnd" type="date"></label>
             <label>賃金区分
@@ -210,6 +218,6 @@
     </div>
   </div>
 
-  <script src="assets/js/app.js?v=4"></script>
+  <script src="assets/js/app.js?v=5"></script>
 </body>
 </html>

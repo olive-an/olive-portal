@@ -1,11 +1,13 @@
 const STORAGE_KEY="olivePortalEmployeesV01";
 let employees=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
 let currentPhoto="";
+let currentContractPdf="";
+let currentContractPdfName="";
 
 const fieldIds=["employeeNo","name","kana","birthDate","postalCode","address","phone","email","emergencyName","emergencyPhone","location","position","employmentType","hireDate","contractEnd","wageType","baseWage","qualificationAllowance","improvementAllowance","transportAllowance","nightWage","healthInsurance","pension","employmentInsurance","healthCheckDate","nextHealthCheck","paidLeaveRemaining","dependents","dependentDeclaration","qualifications","qualificationDate","qualificationExpiry","notes"];
 
 const $=id=>document.getElementById(id);
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(employees))}
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(employees));return true}catch(e){alert("保存容量の上限に達しました。PDFや写真のファイルサイズを小さくするか、不要なデータを削除してください。（このアプリはブラウザ内保存のため、扱えるファイル総量に限りがあります）");return false}}
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 
 function showView(target){
@@ -26,17 +28,18 @@ function syncEmpButtons(){const v=$("employmentType").value;document.querySelect
 document.querySelectorAll("#empTypeButtons .segbtn").forEach(b=>b.addEventListener("click",()=>{$("employmentType").value=b.dataset.val;syncEmpButtons();}));
 
 function openForm(id=""){
-  $("employeeForm").reset(); $("employeeId").value=""; currentPhoto="";
-  $("photoPreview").innerHTML="👤"; $("modalTitle").textContent=id?"職員情報編集":"職員登録";
+  $("employeeForm").reset(); $("employeeId").value=""; currentPhoto=""; currentContractPdf=""; currentContractPdfName="";
+  $("contractPdfInput").value=""; $("photoPreview").innerHTML="👤"; $("modalTitle").textContent=id?"職員情報編集":"職員登録";
   if(id){
     const employee=employees.find(e=>e.id===id); if(!employee)return;
     $("employeeId").value=id;
     fieldIds.forEach(key=>{if($(key))$(key).value=employee[key]??""});
     currentPhoto=employee.photo||"";
     if(currentPhoto)$("photoPreview").innerHTML=`<img src="${currentPhoto}" alt="顔写真">`;
+    currentContractPdf=employee.contractPdf||""; currentContractPdfName=employee.contractPdfName||"";
   }
   document.querySelector(".tab[data-tab='basic']").click();
-  syncEmpButtons();
+  syncEmpButtons(); renderContractPdf();
   $("employeeModal").classList.add("open"); $("employeeModal").setAttribute("aria-hidden","false");
 }
 function closeForm(){$("employeeModal").classList.remove("open");$("employeeModal").setAttribute("aria-hidden","true")}
@@ -51,11 +54,33 @@ $("photoInput").addEventListener("change",event=>{
   reader.readAsDataURL(file);
 });
 
+function renderContractPdf(){
+  const wrap=$("contractPdfPreview");
+  if(currentContractPdf){
+    $("contractPdfName").textContent=currentContractPdfName||"contract.pdf";
+    $("contractPdfRemove").style.display="";
+    wrap.innerHTML=`<iframe class="pdf-frame" src="${currentContractPdf}" title="労働契約書プレビュー"></iframe><a class="pdf-open" href="${currentContractPdf}" target="_blank" rel="noopener">別タブで開く</a>`;
+  }else{
+    $("contractPdfName").textContent="未登録";
+    $("contractPdfRemove").style.display="none";
+    wrap.innerHTML="";
+  }
+}
+$("contractPdfInput").addEventListener("change",event=>{
+  const file=event.target.files[0]; if(!file)return;
+  if(file.type!=="application/pdf"){alert("PDFファイルを選択してください。");return}
+  if(file.size>3*1024*1024){alert("PDFは3MB以下にしてください。（ブラウザ内保存の容量制限のため）");return}
+  const reader=new FileReader();
+  reader.onload=e=>{currentContractPdf=e.target.result;currentContractPdfName=file.name;renderContractPdf();};
+  reader.readAsDataURL(file);
+});
+$("contractPdfRemove").addEventListener("click",()=>{currentContractPdf="";currentContractPdfName="";$("contractPdfInput").value="";renderContractPdf();});
+
 $("employeeForm").addEventListener("submit",event=>{
   event.preventDefault();
   const id=$("employeeId").value||crypto.randomUUID();
   const existing=employees.find(e=>e.id===id)||{};
-  const employee={...existing,id,status:existing.status||"active",photo:currentPhoto,updatedAt:new Date().toISOString()};
+  const employee={...existing,id,status:existing.status||"active",photo:currentPhoto,contractPdf:currentContractPdf,contractPdfName:currentContractPdfName,updatedAt:new Date().toISOString()};
   fieldIds.forEach(key=>employee[key]=$(key)?.value??"");
   const index=employees.findIndex(e=>e.id===id);
   if(index>=0)employees[index]=employee;else employees.push(employee);
