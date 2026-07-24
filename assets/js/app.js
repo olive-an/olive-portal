@@ -2,7 +2,7 @@ const STORAGE_KEY="olivePortalEmployeesV01";
 const MEDIA_KEY="olivePortalMedia";
 const PW_KEY="olivePortalPw";
 // Google スプレッドシート連携。デプロイURL（.../exec）を設定するとクラウド同期が有効になる。空なら端末内保存のみ。
-const API_URL="";
+const API_URL="https://script.google.com/macros/s/AKfycbxMD4m0nVeyKy9lb5Pl4yGrleR5V_goxSlg0vPlE_k2Q7YR9_aRN-aLA8uwBKSs928/exec";
 
 const $=id=>document.getElementById(id);
 function loadMediaStore(){try{return JSON.parse(localStorage.getItem(MEDIA_KEY)||"{}")}catch(_){return {}}}
