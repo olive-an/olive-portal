@@ -6,13 +6,14 @@ const API_URL="https://script.google.com/macros/s/AKfycbxMD4m0nVeyKy9lb5Pl4yGrle
 
 const $=id=>document.getElementById(id);
 function loadMediaStore(){try{return JSON.parse(localStorage.getItem(MEDIA_KEY)||"{}")}catch(_){return {}}}
-function attachMedia(e){const m=loadMediaStore()[e.id];if(m){if(m.photo)e.photo=m.photo;if(m.contractPdf)e.contractPdf=m.contractPdf;}return e;}
+function attachMedia(e){const m=loadMediaStore()[e.id];if(m&&m.photo)e.photo=m.photo;return e;}
 function slim(e){const c=Object.assign({},e);delete c.photo;delete c.contractPdf;return c;}
 
 let employees=(JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]")).map(attachMedia);
 let currentPhoto="";
-let currentContractPdf="";
+let currentContractFileId="";
 let currentContractPdfName="";
+let currentContractDataUrl="";
 
 const fieldIds=["employeeNo","name","kana","birthDate","postalCode","address","phone","email","emergencyName","emergencyPhone","location","position","employmentType","hireDate","contractEnd","wageType","baseWage","qualificationAllowance","improvementAllowance","transportAllowance","nightWage","healthInsurance","pension","employmentInsurance","healthCheckDate","nextHealthCheck","paidLeaveRemaining","dependents","dependentDeclaration","qualifications","qualificationDate","qualificationExpiry","notes"];
 
@@ -21,8 +22,8 @@ function getPw(){return localStorage.getItem(PW_KEY)||"";}
 function setSyncStatus(t){const el=$("syncStatus");if(el)el.textContent=t;}
 function persistLocal(){
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(employees.map(slim)));}catch(_){}
-  var media={};employees.forEach(function(e){if(e.photo||e.contractPdf)media[e.id]={photo:e.photo||"",contractPdf:e.contractPdf||""};});
-  try{localStorage.setItem(MEDIA_KEY,JSON.stringify(media));}catch(_){alert("写真・PDFの端末内保存が上限に達しました。ファイルサイズを小さくしてください。");}
+  var media={};employees.forEach(function(e){if(e.photo)media[e.id]={photo:e.photo};});
+  try{localStorage.setItem(MEDIA_KEY,JSON.stringify(media));}catch(_){alert("写真の端末内保存が上限に達しました。写真サイズを小さくしてください。");}
 }
 async function apiCall(action,payload){
   const res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({action:action,password:getPw()},payload||{}))});
@@ -58,7 +59,7 @@ function syncEmpButtons(){const v=$("employmentType").value;document.querySelect
 document.querySelectorAll("#empTypeButtons .segbtn").forEach(b=>b.addEventListener("click",()=>{$("employmentType").value=b.dataset.val;syncEmpButtons();}));
 
 function openForm(id=""){
-  $("employeeForm").reset(); $("employeeId").value=""; currentPhoto=""; currentContractPdf=""; currentContractPdfName="";
+  $("employeeForm").reset(); $("employeeId").value=""; currentPhoto=""; currentContractFileId=""; currentContractPdfName=""; currentContractDataUrl="";
   $("contractPdfInput").value=""; $("photoPreview").innerHTML="👤"; $("modalTitle").textContent=id?"職員情報編集":"職員登録";
   if(id){
     const employee=employees.find(e=>e.id===id); if(!employee)return;
@@ -66,11 +67,19 @@ function openForm(id=""){
     fieldIds.forEach(key=>{if($(key))$(key).value=employee[key]??""});
     currentPhoto=employee.photo||"";
     if(currentPhoto)$("photoPreview").innerHTML=`<img src="${currentPhoto}" alt="顔写真">`;
-    currentContractPdf=employee.contractPdf||""; currentContractPdfName=employee.contractPdfName||"";
+    currentContractFileId=employee.contractFileId||""; currentContractPdfName=employee.contractPdfName||"";
   }
   document.querySelector(".tab[data-tab='basic']").click();
   syncEmpButtons(); renderContractPdf();
+  if(currentContractFileId) loadContractPreview();
   $("employeeModal").classList.add("open"); $("employeeModal").setAttribute("aria-hidden","false");
+}
+async function loadContractPreview(){
+  const fid=currentContractFileId;
+  try{
+    const r=await apiCall("getContract",{fileId:fid});
+    if(r.ok && currentContractFileId===fid){ currentContractDataUrl=`data:${r.mimeType||"application/pdf"};base64,${r.base64}`; renderContractPdf(); }
+  }catch(_){}
 }
 function closeForm(){$("employeeModal").classList.remove("open");$("employeeModal").setAttribute("aria-hidden","true")}
 $("closeModal").addEventListener("click",closeForm);$("cancelForm").addEventListener("click",closeForm);
@@ -86,31 +95,42 @@ $("photoInput").addEventListener("change",event=>{
 
 function renderContractPdf(){
   const wrap=$("contractPdfPreview");
-  if(currentContractPdf){
+  if(currentContractFileId||currentContractDataUrl){
     $("contractPdfName").textContent=currentContractPdfName||"contract.pdf";
     $("contractPdfRemove").style.display="";
-    wrap.innerHTML=`<iframe class="pdf-frame" src="${currentContractPdf}" title="労働契約書プレビュー"></iframe><a class="pdf-open" href="${currentContractPdf}" target="_blank" rel="noopener">別タブで開く</a>`;
+    if(currentContractDataUrl){
+      wrap.innerHTML=`<iframe class="pdf-frame" src="${currentContractDataUrl}" title="労働契約書プレビュー"></iframe><a class="pdf-open" href="${currentContractDataUrl}" target="_blank" rel="noopener">別タブで開く</a>`;
+    }else{
+      wrap.innerHTML=`<div class="pdf-loading">契約書を読み込み中…</div>`;
+    }
   }else{
     $("contractPdfName").textContent="未登録";
     $("contractPdfRemove").style.display="none";
     wrap.innerHTML="";
   }
 }
-$("contractPdfInput").addEventListener("change",event=>{
+$("contractPdfInput").addEventListener("change",async event=>{
   const file=event.target.files[0]; if(!file)return;
   if(file.type!=="application/pdf"){alert("PDFファイルを選択してください。");return}
-  if(file.size>3*1024*1024){alert("PDFは3MB以下にしてください。（ブラウザ内保存の容量制限のため）");return}
-  const reader=new FileReader();
-  reader.onload=e=>{currentContractPdf=e.target.result;currentContractPdfName=file.name;renderContractPdf();};
-  reader.readAsDataURL(file);
+  if(file.size>8*1024*1024){alert("PDFは8MB以下にしてください。");return}
+  if(!apiConfigured()||!getPw()){alert("契約書のアップロードにはログイン（クラウド接続）が必要です。");return}
+  const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(file);});
+  setSyncStatus("契約書をアップロード中…");
+  try{
+    const r=await apiCall("uploadContract",{base64:dataUrl.split(",")[1],filename:file.name,mimeType:"application/pdf"});
+    if(!r.ok)throw new Error(r.error||"upload");
+    currentContractFileId=r.fileId; currentContractPdfName=r.filename||file.name; currentContractDataUrl=dataUrl;
+    setSyncStatus("同期済み"); renderContractPdf();
+  }catch(err){ setSyncStatus("契約書アップロード失敗"); alert("契約書のアップロードに失敗しました: "+err); }
 });
-$("contractPdfRemove").addEventListener("click",()=>{currentContractPdf="";currentContractPdfName="";$("contractPdfInput").value="";renderContractPdf();});
+$("contractPdfRemove").addEventListener("click",()=>{currentContractFileId="";currentContractPdfName="";currentContractDataUrl="";$("contractPdfInput").value="";renderContractPdf();});
 
 $("employeeForm").addEventListener("submit",event=>{
   event.preventDefault();
   const id=$("employeeId").value||crypto.randomUUID();
   const existing=employees.find(e=>e.id===id)||{};
-  const employee={...existing,id,status:existing.status||"active",photo:currentPhoto,contractPdf:currentContractPdf,contractPdfName:currentContractPdfName,updatedAt:new Date().toISOString()};
+  const employee={...existing,id,status:existing.status||"active",photo:currentPhoto,contractFileId:currentContractFileId,contractPdfName:currentContractPdfName,updatedAt:new Date().toISOString()};
+  delete employee.contractPdf;
   fieldIds.forEach(key=>employee[key]=$(key)?.value??"");
   const index=employees.findIndex(e=>e.id===id);
   if(index>=0)employees[index]=employee;else employees.push(employee);
