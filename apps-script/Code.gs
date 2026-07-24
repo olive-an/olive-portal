@@ -4,17 +4,20 @@
  * 使い方：
  *  1. Google スプレッドシートを新規作成
  *  2. 拡張機能 → Apps Script を開き、このコードを貼り付け
- *  3. プロジェクトの設定 → スクリプト プロパティに APP_PASSWORD を追加（共有パスワード）
- *  4. デプロイ → 新しいデプロイ → 種類「ウェブアプリ」
+ *  3. デプロイ → 新しいデプロイ → 種類「ウェブアプリ」
  *       実行するユーザー：自分
  *       アクセスできるユーザー：全員
  *     → 表示されるウェブアプリURL（.../exec）をアプリ側に設定する
  *
  * データは employees シートに 1行 = 1従業員（JSON）で保存される。
  * 写真・PDFはセル容量制限のため保存しない（端末内のみ）。
+ *
+ * ※ APP_PASSWORD はこのアプリのログインパスワード。変更したい時はここを書き換える。
+ *   （このコードは公開されません。公開されるのは実行用URLのみ）
  */
 
 var SHEET_NAME = 'employees';
+var APP_PASSWORD = 'ここにパスワードを入れる';  // ← 実際のパスワードに置き換える（このファイルは公開リポジトリのためダミー）
 
 function doGet(e) { return handle(e); }
 function doPost(e) { return handle(e); }
@@ -27,9 +30,7 @@ function handle(e) {
     } else if (e && e.parameter) {
       body = e.parameter;
     }
-    var correct = PropertiesService.getScriptProperties().getProperty('APP_PASSWORD');
-    if (!correct) return out({ ok: false, error: 'no_password_set' });
-    if (String(body.password || '') !== String(correct)) return out({ ok: false, error: 'unauthorized' });
+    if (String(body.password || '') !== String(APP_PASSWORD)) return out({ ok: false, error: 'unauthorized' });
 
     var action = body.action;
     if (action === 'load') return out({ ok: true, employees: readAll() });
