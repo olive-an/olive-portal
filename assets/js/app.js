@@ -1,13 +1,43 @@
 const STORAGE_KEY="olivePortalEmployeesV01";
-let employees=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+const MEDIA_KEY="olivePortalMedia";
+const PW_KEY="olivePortalPw";
+// Google スプレッドシート連携。デプロイURL（.../exec）を設定するとクラウド同期が有効になる。空なら端末内保存のみ。
+const API_URL="";
+
+const $=id=>document.getElementById(id);
+function loadMediaStore(){try{return JSON.parse(localStorage.getItem(MEDIA_KEY)||"{}")}catch(_){return {}}}
+function attachMedia(e){const m=loadMediaStore()[e.id];if(m){if(m.photo)e.photo=m.photo;if(m.contractPdf)e.contractPdf=m.contractPdf;}return e;}
+function slim(e){const c=Object.assign({},e);delete c.photo;delete c.contractPdf;return c;}
+
+let employees=(JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]")).map(attachMedia);
 let currentPhoto="";
 let currentContractPdf="";
 let currentContractPdfName="";
 
 const fieldIds=["employeeNo","name","kana","birthDate","postalCode","address","phone","email","emergencyName","emergencyPhone","location","position","employmentType","hireDate","contractEnd","wageType","baseWage","qualificationAllowance","improvementAllowance","transportAllowance","nightWage","healthInsurance","pension","employmentInsurance","healthCheckDate","nextHealthCheck","paidLeaveRemaining","dependents","dependentDeclaration","qualifications","qualificationDate","qualificationExpiry","notes"];
 
-const $=id=>document.getElementById(id);
-function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(employees));return true}catch(e){alert("保存容量の上限に達しました。PDFや写真のファイルサイズを小さくするか、不要なデータを削除してください。（このアプリはブラウザ内保存のため、扱えるファイル総量に限りがあります）");return false}}
+function apiConfigured(){return !!API_URL;}
+function getPw(){return localStorage.getItem(PW_KEY)||"";}
+function setSyncStatus(t){const el=$("syncStatus");if(el)el.textContent=t;}
+function persistLocal(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(employees.map(slim)));}catch(_){}
+  var media={};employees.forEach(function(e){if(e.photo||e.contractPdf)media[e.id]={photo:e.photo||"",contractPdf:e.contractPdf||""};});
+  try{localStorage.setItem(MEDIA_KEY,JSON.stringify(media));}catch(_){alert("写真・PDFの端末内保存が上限に達しました。ファイルサイズを小さくしてください。");}
+}
+async function apiCall(action,payload){
+  const res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({action:action,password:getPw()},payload||{}))});
+  return res.json();
+}
+let pushTimer=null;
+function cloudPush(){
+  if(!apiConfigured()||!getPw())return;
+  clearTimeout(pushTimer);setSyncStatus("同期中…");
+  pushTimer=setTimeout(async function(){
+    try{const r=await apiCall("save",{employees:employees.map(slim)});if(!r.ok)throw new Error(r.error||"save");setSyncStatus("同期済み "+new Date().toLocaleTimeString());}
+    catch(err){setSyncStatus("同期失敗（端末内には保存済み）");}
+  },500);
+}
+function save(){persistLocal();cloudPush();return true;}
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 
 function showView(target){
@@ -139,8 +169,33 @@ function renderAll(){
   renderEmployees();
 }
 
-if(!employees.length){
-  employees=[{id:crypto.randomUUID(),status:"active",employeeNo:"EMP0001",name:"岩久保 博一",kana:"イワクボ ヒロカズ",location:"本社",position:"総務",employmentType:"正社員",hireDate:"2019-04-01",qualifications:"",healthCheckDate:"",dependentDeclaration:"提出済",notes:"サンプルデータ"}];
-  save();
+function showLogin(msg){const o=$("loginOverlay");if(o){o.classList.add("open");if($("loginError"))$("loginError").textContent=msg||"";}}
+function hideLogin(){const o=$("loginOverlay");if(o)o.classList.remove("open");}
+async function initCloud(){
+  if(!getPw()){showLogin();return;}
+  setSyncStatus("読み込み中…");
+  try{
+    const r=await apiCall("load",{});
+    if(!r.ok){
+      if(r.error==="unauthorized"){localStorage.removeItem(PW_KEY);showLogin("パスワードが違います。");return;}
+      throw new Error(r.error||"load");
+    }
+    employees=(r.employees||[]).map(attachMedia);
+    persistLocal();hideLogin();renderAll();setSyncStatus("同期済み "+new Date().toLocaleTimeString());
+  }catch(err){
+    hideLogin();renderAll();setSyncStatus("オフライン（端末内データを表示）");
+  }
 }
-renderAll();
+if($("loginForm")){
+  $("loginForm").addEventListener("submit",function(ev){ev.preventDefault();localStorage.setItem(PW_KEY,$("loginPw").value);initCloud();});
+}
+
+if(apiConfigured()){
+  initCloud();
+}else{
+  if(!employees.length){
+    employees=[{id:crypto.randomUUID(),status:"active",employeeNo:"EMP0001",name:"岩久保 博一",kana:"イワクボ ヒロカズ",location:"本社",position:"総務",employmentType:"正社員",hireDate:"2019-04-01",qualifications:"",healthCheckDate:"",dependentDeclaration:"提出済",notes:"サンプルデータ"}];
+    save();
+  }
+  renderAll();
+}

@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="おりーぶ庵">
   <title>おりーぶ庵 従業員管理</title>
-  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
 </head>
 <body>
   <div class="app">
@@ -16,6 +16,7 @@
       <div>
         <p class="eyebrow">おりーぶ庵株式会社</p>
         <h1>従業員管理</h1>
+        <p class="sync-status" id="syncStatus"></p>
       </div>
       <button class="round-button" id="addEmployeeTop" aria-label="職員を追加">＋</button>
     </header>
@@ -215,6 +216,17 @@
     </div>
   </div>
 
-  <script src="assets/js/app.js?v=5"></script>
+  <div class="login-overlay" id="loginOverlay">
+    <form class="login-card" id="loginForm">
+      <p class="eyebrow">おりーぶ庵株式会社</p>
+      <h2>従業員管理</h2>
+      <p class="login-lead">共有パスワードを入力してください。</p>
+      <input id="loginPw" type="password" placeholder="パスワード" autocomplete="current-password" required>
+      <p class="login-error" id="loginError"></p>
+      <button type="submit" class="primary-button">ログイン</button>
+    </form>
+  </div>
+
+  <script src="assets/js/app.js?v=6"></script>
 </body>
 </html>
