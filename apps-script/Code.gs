@@ -20,6 +20,13 @@ var SHEET_NAME = 'employees';
 var CONTRACTS_FOLDER = 'olive-portal-契約書';
 var APP_PASSWORD = 'ここにパスワードを入れる';  // ← 実際のパスワードに置き換える（このファイルは公開リポジトリのためダミー）
 
+// エディタで1回だけ実行して、スプレッドシートとドライブへのアクセスを承認する用
+function authorize() {
+  SpreadsheetApp.getActiveSpreadsheet().getName();
+  contractsFolder();
+  return 'ok';
+}
+
 function doGet(e) { return handle(e); }
 function doPost(e) { return handle(e); }
 
